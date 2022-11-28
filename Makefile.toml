@@ -1,0 +1,11 @@
+[tasks.test]
+clear = true
+dependencies = ["test-debug", "test-release"]
+
+[tasks.test-debug]
+command = "cargo"
+args = ["test", "--compare-mode=debug"]
+
+[tasks.test-release]
+command = "cargo"
+args = ["test", "--release", "--compare-mode=release"]
