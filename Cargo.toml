@@ -1,8 +1,8 @@
 [package]
-name = "dbgdbg"
+name = "dbgonly"
 version = "0.1.0"
 description = "The dbg macro, but only when debug_assertions are set"
-repository = "https://github.com/galenguyer/dbgdbg"
+repository = "https://github.com/galenguyer/dbgonly"
 edition = "2021"
 license = "MIT"
 

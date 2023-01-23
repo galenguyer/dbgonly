@@ -4,8 +4,8 @@ dependencies = ["test-debug", "test-release"]
 
 [tasks.test-debug]
 command = "cargo"
-args = ["test", "--compare-mode=debug"]
+args = ["test"]
 
 [tasks.test-release]
 command = "cargo"
-args = ["test", "--release", "--compare-mode=release"]
+args = ["test", "--release"]

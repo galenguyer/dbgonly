@@ -4,13 +4,15 @@
  */
 
 /// Prints and returns the value of a given expression for quick and dirty
-/// debugging.
+/// debugging. This version of the macro will print nothing and be optmized
+/// out in release builds.
 ///
 /// An example:
 ///
 /// ```rust
+/// use dbgonly::dbgonly;
 /// let a = 2;
-/// let b = dbg!(a * 2) + 1;
+/// let b = dbgonly!(a * 2) + 1;
 /// //      ^-- prints: [src/main.rs:2] a * 2 = 4
 /// assert_eq!(b, 5);
 /// ```
@@ -23,12 +25,10 @@
 /// Invoking the macro on an expression moves and takes ownership of it
 /// before returning the evaluated expression unchanged. If the type
 /// of the expression does not implement `Copy` and you don't want
-/// to give up ownership, you can instead borrow with `dbg!(&expr)`
+/// to give up ownership, you can instead borrow with `dbgonly!(&expr)`
 /// for some expression `expr`.
 ///
-/// The `dbg!` macro works exactly the same in release builds.
-/// This is useful when debugging issues that only occur in release
-/// builds or when debugging in release mode is significantly faster.
+/// The `dbgonly!` macro is optimized out in release builds.
 ///
 /// Note that the macro is intended as a debugging tool and therefore you
 /// should avoid having uses of it in version control for long periods
@@ -50,8 +50,9 @@
 /// With a method call:
 ///
 /// ```rust
+/// use dbgonly::dbgonly;
 /// fn foo(n: usize) {
-///     if let Some(_) = dbg!(n.checked_sub(4)) {
+///     if let Some(_) = dbgonly!(n.checked_sub(4)) {
 ///         // ...
 ///     }
 /// }
@@ -68,15 +69,16 @@
 /// Naive factorial implementation:
 ///
 /// ```rust
+/// use dbgonly::dbgonly;
 /// fn factorial(n: u32) -> u32 {
-///     if dbg!(n <= 1) {
-///         dbg!(1)
+///     if dbgonly!(n <= 1) {
+///         dbgonly!(1)
 ///     } else {
-///         dbg!(n * factorial(n - 1))
+///         dbgonly!(n * factorial(n - 1))
 ///     }
 /// }
 ///
-/// dbg!(factorial(4));
+/// dbgonly!(factorial(4));
 /// ```
 ///
 /// This prints to [stderr]:
@@ -93,26 +95,28 @@
 /// [src/main.rs:11] factorial(4) = 24
 /// ```
 ///
-/// The `dbg!(..)` macro moves the input:
+/// The `dbgonly!(..)` macro moves the input:
 ///
 /// ```compile_fail
+/// use dbgonly::dbgonly;
 /// /// A wrapper around `usize` which importantly is not Copyable.
 /// #[derive(Debug)]
 /// struct NoCopy(usize);
 ///
 /// let a = NoCopy(42);
-/// let _ = dbg!(a); // <-- `a` is moved here.
-/// let _ = dbg!(a); // <-- `a` is moved again; error!
+/// let _ = dbgonly!(a); // <-- `a` is moved here.
+/// let _ = dbgonly!(a); // <-- `a` is moved again; error!
 /// ```
 ///
-/// You can also use `dbg!()` without a value to just print the
+/// You can also use `dbgonly!()` without a value to just print the
 /// file and line whenever it's reached.
 ///
-/// Finally, if you want to `dbg!(..)` multiple values, it will treat them as
+/// Finally, if you want to `dbgonly!(..)` multiple values, it will treat them as
 /// a tuple (and return it, too):
 ///
 /// ```
-/// assert_eq!(dbg!(1usize, 2u32), (1, 2));
+/// use dbgonly::dbgonly;
+/// assert_eq!(dbgonly!(1usize, 2u32), (1, 2));
 /// ```
 ///
 /// However, a single argument with a trailing comma will still not be treated
@@ -120,8 +124,9 @@
 /// invocations. You can use a 1-tuple directly if you need one:
 ///
 /// ```
-/// assert_eq!(1, dbg!(1u32,)); // trailing comma ignored
-/// assert_eq!((1,), dbg!((1u32,))); // 1-tuple
+/// use dbgonly::dbgonly;
+/// assert_eq!(1, dbgonly!(1u32,)); // trailing comma ignored
+/// assert_eq!((1,), dbgonly!((1u32,))); // 1-tuple
 /// ```
 ///
 /// [stderr]: https://en.wikipedia.org/wiki/Standard_streams#Standard_error_(stderr)
@@ -129,7 +134,7 @@
 /// [`log`]: https://crates.io/crates/log
 #[macro_export]
 #[cfg(debug_assertions)]
-macro_rules! dbgdbg {
+macro_rules! dbgonly {
     // NOTE: We cannot use `concat!` to make a static string as a format argument
     // of `eprintln!` because `file!` could contain a `{` or
     // `$val` expression could be a block (`{ .. }`), in which case the `eprintln!`
@@ -149,14 +154,20 @@ macro_rules! dbgdbg {
         }
     };
     ($($val:expr),+ $(,)?) => {
-        ($(dbg!($val)),+,)
+        ($(dbgonly!($val)),+,)
     };
 }
 
 #[macro_export]
 #[cfg(not(debug_assertions))]
-macro_rules! dbgdbg {
+macro_rules! dbgonly {
     () => {};
-    ($val:expr $(,)?) => {};
-    ($($val:expr),+ $(,)?) => {};
+    ($val:expr $(,)?) => {
+        match $val {
+            tmp => tmp
+        }
+    };
+    ($($val:expr),+ $(,)?) => {
+        ($(dbgonly!($val)),+,)
+    };
 }
